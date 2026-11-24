@@ -1,0 +1,12 @@
+{
+  "team": "Hulla hulla FC",
+  "slug": "hulla-hulla-fc",
+  "_poznamka": "Známé sezóny týmu. finalPlace = konečné pořadí podle PSMF, pokud se liší od průběžné tabulky na stránce týmu. Nové sezóny program najde sám.",
+  "seasons": [
+    { "url": "/souteze/2024-hanspaulska-liga-podzim/7-g/tymy/hulla-hulla-fc/", "finalPlace": 4 },
+    { "url": "/souteze/2025-hanspaulska-liga-jaro/6-h/tymy/hulla-hulla-fc/", "finalPlace": 10 },
+    { "url": "/souteze/2025-hanspaulska-liga-podzim/7-f/tymy/hulla-hulla-fc/", "finalPlace": 5 },
+    { "url": "/souteze/2026-hanspaulska-liga-jaro/7-g/tymy/hulla-hulla-fc/", "finalPlace": 4 },
+    { "url": "/souteze/2026-hanspaulska-liga-podzim/6-e/tymy/hulla-hulla-fc/" }
+  ]
+}

@@ -1,0 +1,76 @@
+rules_version = '2';
+
+// Pravidla databáze aplikace Hulla hulla FC.
+// Číst a zapisovat smí jen aplikace (anonymní přihlášení). Výsledky a rozpis zapisuje jen automat z GitHubu.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function str(v, max) { return v is string && v.size() <= max; }
+    function data() { return request.resource.data; }
+
+    // Soupiska: jména může přepsat kdokoli z týmu, hráče lze skrýt, ale ne smazat (kvůli statistikám)
+    match /players/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && data().keys().hasOnly(['name', 'psmfName', 'active', 'createdAt', 'manual'])
+        && str(data().name, 60) && data().name.size() > 0
+        && (!('psmfName' in data()) || str(data().psmfName, 60))
+        && (!('active' in data()) || data().active is bool);
+      allow update: if signedIn()
+        && data().diff(resource.data).affectedKeys().hasOnly(['name', 'psmfName', 'active'])
+        && str(data().name, 60) && data().name.size() > 0
+        && (!('psmfName' in data()) || str(data().psmfName, 60))
+        && (!('active' in data()) || data().active is bool);
+      allow delete: if false;
+    }
+
+    // Docházka: Jdu / Nejdu. „Nehlásil se“ = záznam neexistuje.
+    match /attendance/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && data().keys().hasOnly(['match', 'player', 'status', 'at'])
+        && data().status in ['yes', 'no']
+        && str(data().match, 80) && str(data().player, 80)
+        && id == data().match + '__' + data().player;
+      allow delete: if signedIn();
+    }
+
+    // Tři volná pole pro náhradníky u každého zápasu
+    match /subs/{matchId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && data().keys().hasOnly(['s0', 's1', 's2'])
+        && (!('s0' in data()) || str(data().s0, 40))
+        && (!('s1' in data()) || str(data().s1, 40))
+        && (!('s2' in data()) || str(data().s2, 40));
+      allow delete: if false;
+    }
+
+    // Zařízení, kam chodí připomínky. Aplikace je jen zapisuje, číst je smí jen automat.
+    match /tokens/{token} {
+      allow create, update: if signedIn()
+        && data().keys().hasOnly(['token', 'player', 'ua', 'updatedAt'])
+        && data().token == token
+        && str(data().player, 80) && str(data().ua, 200);
+      allow read, delete: if false;
+    }
+
+    // Zápasy zapisuje automat z PSMF. Tým smí jen ručně opravit výsledek (pole override).
+    match /matches/{id} {
+      allow read: if signedIn();
+      allow update: if signedIn()
+        && data().diff(resource.data).affectedKeys().hasOnly(['override'])
+        && (data().override == null
+            || (data().override.keys().hasOnly(['score', 'ht'])
+                && data().override.score is string && data().override.score.matches('^[0-9]{1,2}:[0-9]{1,2}$')
+                && (!('ht' in data().override) || data().override.ht == null
+                    || (data().override.ht is string && data().override.ht.matches('^[0-9]{1,2}:[0-9]{1,2}$')))));
+      allow create, delete: if false;
+    }
+
+    // Data z PSMF zapisuje jen automat
+    match /seasons/{id} { allow read: if signedIn(); allow write: if false; }
+    match /config/{id}  { allow read: if signedIn(); allow write: if false; }
+  }
+}

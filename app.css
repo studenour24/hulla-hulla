@@ -1,0 +1,230 @@
+/* Hulla hulla FC – vzhled aplikace */
+@font-face{font-family:"Archivo";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/archivo-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/archivo-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/archivo-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/archivo-latin-ext-600-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/archivo-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/archivo-latin-ext-700-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Saira Extra Condensed";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/saira-extra-condensed-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Saira Extra Condensed";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/saira-extra-condensed-latin-ext-700-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Saira Extra Condensed";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/saira-extra-condensed-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Saira Extra Condensed";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/saira-extra-condensed-latin-ext-800-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+:root{
+  /* Zápasový program: papír, inkoust a žlutý rozlišovák. Nejbližší zápas na tmavé tabuli. */
+  --paper:#eceee8; --surface:#f8f9f5; --ink:#14211b; --muted:#56645b; --line:#d2d8cf; --bib:#f2d027;
+  --board:#14211b; --board-ink:#f1f4ee; --board-muted:#a3b3a8; --board-line:rgba(255,255,255,.16);
+  --yes:#1f7a49; --no:#b13f2c; --none:#7b877f;
+  --yes-bg:#dcefe2; --no-bg:#f5dfda; --on-sem:#ffffff;
+  --display:"Saira Extra Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0e1511; --surface:#162019; --ink:#e6ebe4; --muted:#97a59c; --line:#28352d; --bib:#f2d027;
+    --board:#1c2b22; --board-ink:#f1f4ee; --board-muted:#a3b3a8; --board-line:rgba(255,255,255,.14);
+    --yes:#4fbf82; --no:#ec6f5e; --none:#7f8c84;
+    --yes-bg:#163222; --no-bg:#3a1a15; --on-sem:#0e1511;
+    color-scheme:dark;
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.board :focus-visible{outline-color:var(--bib)}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+h1,h2,h3{text-wrap:balance}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* Horní lišta */
+.appbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(10px + var(--safe-t)) 16px 10px;background:var(--paper);border-bottom:1px solid var(--line)}
+.brand{text-decoration:none;display:grid;line-height:1}
+.brand-name{font:800 26px/1 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.brand-name .fc{color:var(--paper);-webkit-text-stroke:1.2px var(--ink)}
+.brand-sub{font:700 12px/1.2 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.icon-btn{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;color:var(--ink)}
+.icon-btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn[aria-current="page"]{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* Spodní navigace */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(4,1fr);
+  background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + var(--safe-b))}
+.tabbar a{display:grid;justify-items:center;gap:2px;padding:6px 2px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600;border-radius:10px}
+.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a[aria-current="page"]{color:var(--ink)}
+.tabbar a[aria-current="page"] svg{stroke-width:2.3}
+.tabbar a[aria-current="page"]::after{content:"";width:22px;height:3px;border-radius:2px;background:var(--bib);margin-top:2px}
+
+main{max-width:640px;margin:0 auto;padding:16px 16px calc(96px + var(--safe-b));display:grid;gap:18px;outline:none}
+.loading{color:var(--muted);text-align:center;padding:40px 0}
+.section-title{font:800 28px/1 var(--display);text-transform:uppercase;margin:6px 0 0;letter-spacing:.01em}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h3{margin:0 0 6px;font:800 21px/1.05 var(--display);text-transform:uppercase}
+.card p{margin:0 0 10px;font-size:15px}
+.card p:last-child{margin-bottom:0}
+.banner{background:var(--bib);color:#14211b;font-size:14px;font-weight:600;padding:9px 16px;text-align:center}
+.banner.err{background:var(--no);color:#fff}
+
+/* Tlačítka a vstupy */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:15px;border:0;border-radius:12px;padding:12px 16px;background:var(--ink);color:var(--paper);cursor:pointer;text-decoration:none;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.small{min-height:36px;padding:7px 12px;font-size:14px;border-radius:10px}
+.btn.danger{background:transparent;color:var(--no);box-shadow:inset 0 0 0 1.5px var(--no)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.field{display:grid;gap:5px;font-size:14px;color:var(--muted)}
+.field input,.field select,.input{width:100%;font-size:16px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:44px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* Tři stavy docházky */
+.tri{display:inline-grid;grid-template-columns:auto auto auto;border-radius:11px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);background:var(--paper);flex-shrink:0}
+.tri button{border:0;background:transparent;color:var(--muted);font-weight:600;font-size:13px;padding:0 11px;min-height:38px;cursor:pointer;white-space:nowrap}
+.tri button+button{box-shadow:inset 1px 0 0 var(--line)}
+.tri button[aria-pressed="true"].yes{background:var(--yes);color:var(--on-sem)}
+.tri button[aria-pressed="true"].no{background:var(--no);color:var(--on-sem)}
+.tri button[aria-pressed="true"].none{background:var(--ink);color:var(--paper)}
+.tri.big{display:grid;width:100%;grid-template-columns:1fr 1fr 1fr;box-shadow:none;background:transparent;gap:6px}
+.tri.big button{font:800 19px/1 var(--display);letter-spacing:.05em;text-transform:uppercase;border-radius:11px;box-shadow:inset 0 0 0 1.5px var(--board-line);color:var(--board-ink);min-height:50px;padding:0 6px}
+.tri.big button+button{box-shadow:inset 0 0 0 1.5px var(--board-line)}
+.tri.big button[aria-pressed="true"].none{background:var(--board-ink);color:var(--board)}
+
+/* Tabule nejbližšího zápasu */
+.board{background:var(--board);color:var(--board-ink);border-radius:20px;padding:20px;display:grid;gap:14px;border:1px solid var(--line)}
+.board .meta{font:700 14px/1.3 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--board-muted);display:flex;flex-wrap:wrap;gap:2px 12px}
+.board .meta b{color:var(--bib)}
+.board .teams{font:800 clamp(32px,10vw,46px)/.95 var(--display);text-transform:uppercase;display:grid;gap:3px;margin:0}
+.board .teams .vs{font-size:15px;letter-spacing:.24em;color:var(--board-muted);font-weight:700}
+.board .teams .us{color:var(--bib)}
+.board .sub{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;color:var(--board-muted)}
+.when{display:inline-flex;font-weight:700;background:rgba(242,208,39,.15);color:var(--bib);border-radius:999px;padding:5px 11px;font-size:14px}
+.shirt{display:inline-flex;align-items:center;gap:6px}
+.shirt i{width:12px;height:12px;border-radius:3px;display:inline-block;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+.tally{display:flex;align-items:flex-end;gap:10px;border-top:1px solid var(--board-line);padding-top:14px}
+.tally .big{font:800 76px/.78 var(--display);color:var(--bib)}
+.tally .of{font-size:15px;color:var(--board-muted);padding-bottom:4px}
+.tally .of b{color:var(--board-ink)}
+.tally .pill{margin-left:auto;align-self:center}
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.1)}
+.bar span{height:100%;transition:width .35s ease}
+.bar .b-yes{background:var(--yes)}
+.bar .b-sub{background:repeating-linear-gradient(135deg,var(--yes) 0 4px,transparent 4px 7px)}
+.bar .b-no{background:var(--no)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--board-muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.pill{display:inline-flex;align-items:center;font:700 13px/1 var(--body);border-radius:999px;padding:6px 10px;white-space:nowrap}
+.pill.ok{background:var(--yes);color:var(--on-sem)}
+.pill.short{background:var(--no);color:var(--on-sem)}
+.board .me-label{font-size:13px;color:var(--board-muted);margin:0}
+.board a.more{font-weight:600;font-size:14px;color:var(--board-ink)}
+.board select{background:rgba(255,255,255,.07);color:var(--board-ink);border:1px solid var(--board-line);border-radius:11px;padding:11px 12px;min-height:44px;width:100%;font-size:16px}
+.board select option{color:#14211b;background:#fff}
+
+/* Seznamy zápasů */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.date{min-width:58px;display:grid;line-height:1.1}
+.date b{font:800 19px/1 var(--display);text-transform:uppercase}
+.date span{font-size:12px;color:var(--muted);margin-top:3px}
+.grow{flex:1;min-width:0}
+.teams-line{font-size:15px;line-height:1.3}
+.teams-line strong{font-weight:700}
+.small{font-size:13px;color:var(--muted)}
+.score{font:800 26px/1 var(--display);text-align:right}
+.res{font:800 16px/1 var(--display);width:30px;height:30px;display:grid;place-items:center;border-radius:7px;flex-shrink:0}
+.res-V{background:var(--yes);color:var(--on-sem)} .res-R{background:var(--none);color:#fff} .res-P{background:var(--no);color:var(--on-sem)}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Výběr zápasu / sezóny */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;display:grid;gap:1px;text-align:left;border:0;border-radius:12px;padding:9px 12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;color:var(--ink);text-decoration:none}
+.chip b{font:800 16px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.chip span{font-size:12px;color:var(--muted)}
+.chip[aria-current="true"]{background:var(--ink);color:var(--paper);box-shadow:none}
+.chip[aria-current="true"] span{color:var(--paper);opacity:.75}
+
+/* Docházka */
+.att-head{display:grid;gap:8px}
+.att-head h2{margin:0;font:800 30px/1 var(--display);text-transform:uppercase}
+.counts{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;align-items:center}
+.counts b{font-weight:700}
+.player{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line);min-height:56px}
+.player:last-child{border-bottom:0}
+.player.me{background:color-mix(in srgb,var(--bib) 22%,var(--surface));box-shadow:inset 4px 0 0 var(--bib)}
+.pname{flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:6px 0;cursor:pointer;display:grid}
+.pname b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname span{font-size:12px;color:var(--muted)}
+.subs{display:grid;gap:8px}
+.subs label{display:flex;align-items:center;gap:10px}
+.subs label span{font:800 16px/1 var(--display);text-transform:uppercase;color:var(--muted);width:24px;text-align:center}
+.saved{font-size:12px;color:var(--yes);font-weight:600;min-width:18px}
+details.more summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
+
+/* Výsledky */
+.standings{width:100%;border-collapse:collapse;font-size:14px}
+.standings th,.standings td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.standings th{font-size:12px;color:var(--muted);font-weight:600}
+.standings th:nth-child(2),.standings td:nth-child(2){text-align:left;white-space:normal;width:100%}
+.standings tr.us td{font-weight:700;background:color-mix(in srgb,var(--bib) 28%,var(--surface))}
+.standings tr:last-child td{border-bottom:0}
+.season-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.season-sum div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid}
+.season-sum b{font:800 28px/1 var(--display)}
+.season-sum span{font-size:12px;color:var(--muted)}
+.out{display:inline-block;font:700 12px/1 var(--body);border-radius:999px;padding:5px 9px}
+.out.up{background:var(--yes-bg);color:var(--yes)} .out.down{background:var(--no-bg);color:var(--no)}
+.out.stay{box-shadow:inset 0 0 0 1px var(--line);color:var(--muted)} .out.live{background:var(--bib);color:#14211b}
+.match{border-bottom:1px solid var(--line)}
+.match:last-child{border-bottom:0}
+.match summary{list-style:none;cursor:pointer}
+.match summary::-webkit-details-marker{display:none}
+.match .detail{padding:0 14px 14px 84px;font-size:14px;display:grid;gap:6px}
+.match .detail p{margin:0}
+.match .detail .lbl{color:var(--muted)}
+.star{color:var(--maybe,#b7791f)}
+.card-y{display:inline-block;width:9px;height:12px;border-radius:2px;background:#e8c11a;vertical-align:-1px;margin-right:3px}
+.card-r{display:inline-block;width:9px;height:12px;border-radius:2px;background:#d23b2b;vertical-align:-1px;margin-right:3px}
+
+/* Hráči */
+.tops{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.top{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:4px}
+.top:first-child{background:var(--bib);border-color:var(--bib);color:#14211b}
+.top .g{font:800 40px/.85 var(--display)}
+.top .n{font-weight:600;font-size:14px;line-height:1.2}
+.top .s{font-size:12px;opacity:.75}
+.stats{width:100%;border-collapse:collapse;font-size:14px}
+.stats th,.stats td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.stats th:first-child,.stats td:first-child{text-align:left;white-space:normal;width:100%}
+.stats th{font-size:12px;color:var(--muted);font-weight:600}
+.stats th button{border:0;background:none;padding:4px 2px;color:inherit;font:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.stats th button[aria-pressed="true"]{color:var(--ink);text-decoration:underline solid}
+.stats tr:last-child td{border-bottom:0}
+.stats tr.me td{background:color-mix(in srgb,var(--bib) 20%,var(--surface))}
+.scroll-x{overflow-x:auto}
+.ladder svg{display:block;width:100%;height:auto}
+.ladder .guide{stroke:var(--line);stroke-dasharray:4 5}
+.ladder .path{fill:none;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.ladder .dot{fill:var(--surface);stroke:var(--ink);stroke-width:3}
+.ladder .dot.now{fill:var(--bib)}
+.ladder text{font-family:var(--body);font-size:12px;fill:var(--muted)}
+.ladder text.lv{font-family:var(--display);font-weight:800;font-size:15px;fill:var(--ink)}
+.ladder text.pl{font-family:var(--display);font-weight:800;font-size:18px;fill:var(--ink)}
+
+/* Okno (dialog) */
+dialog{border:0;border-radius:20px;padding:0;width:min(520px,calc(100% - 24px));background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,16,12,.55)}
+dialog form{padding:20px;display:grid;gap:14px}
+dialog h2{margin:0;font:800 26px/1 var(--display);text-transform:uppercase}
+.sheet-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+.toast{position:fixed;left:50%;bottom:calc(86px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:30}
+.toast[hidden]{display:none}
