@@ -85,17 +85,28 @@ async function createFirebaseStore(cfg, onChange, onMessage) {
     },
     /* permission = výsledek Notification.requestPermission() vyvolaného přímo kliknutím */
     async enablePush(permission, playerId) {
-      const perm = await permission;
-      if (perm !== "granted") return { ok: false, reason: perm };
-      const m = await loadMessaging();
-      if (!m) return { ok: false, reason: "unsupported" };
-      const reg = (await navigator.serviceWorker.getRegistration("./")) || (await navigator.serviceWorker.register("./sw.js"));
-      await navigator.serviceWorker.ready;
-      const token = await msgM.getToken(m, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: reg });
-      if (!token) return { ok: false, reason: "no-token" };
-      await saveToken(token, playerId);
-      try { localStorage.setItem("hh-push", token); } catch (e) {}
-      return { ok: true };
+      let stage = "povolení oznámení";
+      try {
+        const perm = await permission;
+        if (perm !== "granted") return { ok: false, reason: perm };
+        stage = "načtení Firebase Messaging";
+        const m = await loadMessaging();
+        if (!m) return { ok: false, reason: "unsupported" };
+        stage = "service worker";
+        let reg = await navigator.serviceWorker.getRegistration("./");
+        if (!reg) reg = await navigator.serviceWorker.register("./sw.js");
+        await navigator.serviceWorker.ready;
+        stage = "registrace telefonu u Firebase (FCM)";
+        const token = await msgM.getToken(m, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: reg });
+        if (!token) return { ok: false, reason: "error", stage, detail: "Firebase nevrátil žádný token" };
+        stage = "uložení do databáze";
+        await saveToken(token, playerId);
+        try { localStorage.setItem("hh-push", token); } catch (e) {}
+        return { ok: true };
+      } catch (e) {
+        const code = e && (e.code || e.name);
+        return { ok: false, reason: "error", stage, detail: (code ? code + ": " : "") + String((e && e.message) || e).slice(0, 300) };
+      }
     },
     async updatePushPlayer(playerId) {
       let token = null; try { token = localStorage.getItem("hh-push"); } catch (e) {}
