@@ -1,0 +1,53 @@
+name: Data z PSMF a připomínky
+
+on:
+  schedule:
+    # Připomínky ve 12:00 pražského času (10:05 UTC v létě, 11:05 UTC v zimě; program si hlídá, aby odešly jen jednou denně)
+    - cron: "5 10 * * *"
+    - cron: "5 11 * * *"
+    # Další stažení výsledků během dne a večer po zápasech
+    - cron: "35 5,15,19,22 * * *"
+  workflow_dispatch:
+    inputs:
+      notify:
+        description: "Poslat testovací připomínku hned"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalace
+        working-directory: sync
+        run: npm install --omit=dev --no-audit --no-fund
+
+      - name: Stažení dat z PSMF a připomínky
+        working-directory: sync
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APP_URL: ${{ vars.APP_URL }}
+          FORCE_NOTIFY: ${{ github.event.inputs.notify }}
+        run: node sync.js
+
+      # GitHub u veřejných repozitářů po 60 dnech bez změn vypíná plánované úlohy. Tohle je udrží zapnuté.
+      - name: Udržet plánované spouštění
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/sync.yml/enable" || true
