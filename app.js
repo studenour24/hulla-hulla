@@ -11,7 +11,7 @@ let store = null;
 let D = null;
 const UI = {
   me: lsGet("hh-me"), sort: "g", statSeason: "all", open: new Set(),
-  pushOn: !!lsGet("hh-push"), pushSupported: false, installEvt: null, pending: false, fatal: null
+  pushOn: !!lsGet("hh-push"), pushSupported: false, pushError: null, installEvt: null, pending: false, fatal: null
 };
 
 /* ---------- pomocné ---------- */
@@ -245,18 +245,31 @@ function pushCard() {
   if (!UI.pushSupported) return null;
   return h("div", { class: "card" }, h("h3", { text: "Zapni si připomínky" }),
     h("p", { text: "Ve 12:00 tři, dva a jeden den před každým zápasem ti přijde upozornění, abys nezapomněl dát vědět." }),
-    h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }));
+    h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }), pushStatus());
 }
+const PERM_WORD = { granted: "povolená", denied: "zablokovaná v telefonu", default: "zatím nevybraná" };
+const BLOCKED_HELP = "Oznámení jsou pro tuhle aplikaci v telefonu zablokovaná. Android: podrž prst na ikoně aplikace → Informace o aplikaci → Oznámení → povolit. iPhone: Nastavení → Oznámení → Hulla hulla. Pak aplikaci zavři, otevři a zkus to znovu.";
 async function enablePush() {
   if (!("Notification" in window)) { toast("Tenhle prohlížeč upozornění nepodporuje."); return; }
   const perm = Notification.requestPermission();
+  UI.pushError = null;
   try {
     const r = await store.enablePush(perm, UI.me || "");
     if (r.ok) { UI.pushOn = true; toast("Připomínky jsou zapnuté."); }
-    else if (r.reason === "denied") toast("Upozornění jsou v prohlížeči zakázaná. Povol je v nastavení telefonu pro tuto aplikaci.");
-    else toast("Připomínky se nepodařilo zapnout.");
-  } catch (e) { console.error(e); toast("Připomínky se nepodařilo zapnout."); }
+    else if (r.reason === "denied") UI.pushError = BLOCKED_HELP;
+    else if (r.reason === "default") UI.pushError = "Okno s povolením se zavřelo bez volby. Zkus to znovu a zvol Povolit.";
+    else if (r.reason === "unsupported") UI.pushError = "Tenhle prohlížeč připomínky nepodporuje. Zkus Chrome na Androidu nebo Safari na iPhonu.";
+    else UI.pushError = "Připomínky se nepodařilo zapnout. Krok: " + (r.stage || "neznámý") + ". Chyba: " + (r.detail || r.reason);
+  } catch (e) { UI.pushError = "Připomínky se nepodařilo zapnout. Chyba: " + String((e && e.message) || e); }
+  if (UI.pushError) toast(UI.pushError.length > 110 ? "Připomínky se nepodařilo zapnout, podrobnosti jsou v kartě Připomínky." : UI.pushError);
   render();
+}
+function pushStatus() {
+  const out = [];
+  if ("Notification" in window) out.push(h("p", { class: "hint", text: "Oprávnění k oznámením: " + (PERM_WORD[Notification.permission] || Notification.permission) + "." }));
+  if (UI.pushError) out.push(h("p", { style: "color:var(--no);font-size:14px;user-select:text", text: UI.pushError }));
+  else if ("Notification" in window && Notification.permission === "denied") out.push(h("p", { style: "color:var(--no);font-size:14px", text: BLOCKED_HELP }));
+  return out;
 }
 function viewHome(X) {
   const out = [];
@@ -486,7 +499,7 @@ function viewSettings(X) {
     h("button", { class: "btn ghost", type: "button", onclick: async () => { await store.disablePush(); UI.pushOn = false; toast("Připomínky jsou vypnuté."); render(); }, text: "Vypnout připomínky" }));
   else if (ios && !standalone) pushBody.push(h("p", { text: "Na iPhonu nejdřív přidej aplikaci na plochu (Safari → Sdílet → Přidat na plochu) a otevři ji odtamtud. Pak tu připomínky zapneš." }));
   else if (!UI.pushSupported) pushBody.push(h("p", { text: "Tenhle prohlížeč upozornění nepodporuje. Zkus Chrome na Androidu nebo Safari na iPhonu (iOS 16.4 a novější)." }));
-  else pushBody.push(h("p", { text: "Ve 12:00 tři, dva a jeden den před zápasem ti přijde upozornění." }), h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }));
+  else pushBody.push(h("p", { text: "Ve 12:00 tři, dva a jeden den před zápasem ti přijde upozornění." }), h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }), pushStatus());
   out.push(h("div", { class: "card" }, h("h3", { text: "Připomínky" }), pushBody));
 
   const inst = [h("h3", { text: "Aplikace na ploše" })];
