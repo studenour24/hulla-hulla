@@ -1,19 +1,18 @@
 /*
  * Nastavení aplikace Hulla hulla FC.
- * Hodnoty doplň podle návodu (NAVOD.md, krok 2). Dokud tu zůstane „VLOZ“, aplikace běží v ukázkovém režimu.
  * Tyto údaje nejsou tajné, mohou být veřejně na GitHubu.
  */
 self.HH_CONFIG = {
   firebase: {
-    apiKey: "VLOZ_API_KEY",
-    authDomain: "VLOZ.firebaseapp.com",
-    projectId: "VLOZ",
-    storageBucket: "VLOZ.appspot.com",
-    messagingSenderId: "VLOZ",
-    appId: "VLOZ"
+    apiKey: "VLOZ_APIKEY_Z_POZNAMEK",
+    authDomain: "hulla-hulla.firebaseapp.com",
+    projectId: "hulla-hulla",
+    storageBucket: "hulla-hulla.firebasestorage.app",
+    messagingSenderId: "348884068143",
+    appId: "1:348884068143:web:a0b353fcf2c59e28d5e3da"
   },
-  // Firebase → Nastavení projektu → Cloud Messaging → Web Push certificates → Key pair
-  vapidKey: "VLOZ_VAPID_KLIC",
+  // Firebase → Settings → Cloud Messaging → Web Push certificates → Key pair
+  vapidKey: "BAhBNky6rUmLDNEWdfqu7ICJvSvb_9Fwb7FbItYSY4pBDfu1nC37vh8QpGP1W9mtCOOczUW6GkgW9ST1F-g9ZI8",
   team: "Hulla hulla FC",
   // Kolik hráčů je potřeba na zápas (5 v poli + brankář)
   minPlayers: 6
