@@ -4,7 +4,7 @@
  */
 self.HH_CONFIG = {
   firebase: {
-    apiKey: "VLOZ_APIKEY_Z_POZNAMEK",
+    apiKey: "AIzaSyDka5qYP_xmnyXVi8-kziwSfdVI4roXxuU",
     authDomain: "hulla-hulla.firebaseapp.com",
     projectId: "hulla-hulla",
     storageBucket: "hulla-hulla.firebasestorage.app",
