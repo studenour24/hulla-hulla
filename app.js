@@ -242,22 +242,36 @@ function pushCard() {
     return h("div", { class: "card" }, h("h3", { text: "Připomínky zápasů" }),
       h("p", { text: "Na iPhonu chodí připomínky jen z aplikace na ploše. V Safari klepni na Sdílet a pak na Přidat na plochu. Aplikaci otevři z plochy a připomínky zapni tady." }));
   }
+  if (IS_SAMSUNG) return h("div", { class: "card" }, h("h3", { text: "Připomínky zápasů" }), samsungNote());
   if (!UI.pushSupported) return null;
   return h("div", { class: "card" }, h("h3", { text: "Zapni si připomínky" }),
     h("p", { text: "Ve 12:00 tři, dva a jeden den před každým zápasem ti přijde upozornění, abys nezapomněl dát vědět." }),
     h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }), pushStatus());
 }
+const IS_SAMSUNG = /SamsungBrowser/i.test(navigator.userAgent);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+function chromeLink() {
+  return "intent://" + location.host + location.pathname + "#Intent;scheme=https;package=com.android.chrome;end";
+}
+function samsungNote() {
+  return h("div", null,
+    h("p", { style: "color:var(--no);font-size:14px", text: "Prohlížeč Samsung Internet připomínky nepodporuje. Otevři aplikaci v Chromu, přidej si ji z Chromu na plochu a připomínky zapni tam. Docházka funguje v obou prohlížečích." }),
+    h("a", { class: "btn", href: chromeLink(), text: "Otevřít v Chromu" }));
+}
 const PERM_WORD = { granted: "povolená", denied: "zablokovaná v telefonu", default: "zatím nevybraná" };
 const BLOCKED_HELP = "Oznámení jsou pro tuhle aplikaci v telefonu zablokovaná. Android: podrž prst na ikoně aplikace → Informace o aplikaci → Oznámení → povolit. iPhone: Nastavení → Oznámení → Hulla hulla. Pak aplikaci zavři, otevři a zkus to znovu.";
 async function enablePush() {
   if (!("Notification" in window)) { toast("Tenhle prohlížeč upozornění nepodporuje."); return; }
-  const perm = Notification.requestPermission();
+  const ask = Notification.requestPermission();
+  const perm = Promise.race([Promise.resolve(ask), new Promise(res => setTimeout(() => res("timeout"), 20000))]);
   UI.pushError = null;
+  toast("Čekám na povolení oznámení…");
   try {
     const r = await store.enablePush(perm, UI.me || "");
     if (r.ok) { UI.pushOn = true; toast("Připomínky jsou zapnuté."); }
     else if (r.reason === "denied") UI.pushError = BLOCKED_HELP;
     else if (r.reason === "default") UI.pushError = "Okno s povolením se zavřelo bez volby. Zkus to znovu a zvol Povolit.";
+    else if (r.reason === "timeout") UI.pushError = "Prohlížeč nezobrazil žádost o povolení oznámení. " + (IS_ANDROID ? "Na Androidu použij Chrome: otevři v něm adresu aplikace, přidej ji na plochu a zkus to znovu." : "Povol oznámení pro tuto stránku v nastavení prohlížeče a zkus to znovu.");
     else if (r.reason === "unsupported") UI.pushError = "Tenhle prohlížeč připomínky nepodporuje. Zkus Chrome na Androidu nebo Safari na iPhonu.";
     else UI.pushError = "Připomínky se nepodařilo zapnout. Krok: " + (r.stage || "neznámý") + ". Chyba: " + (r.detail || r.reason);
   } catch (e) { UI.pushError = "Připomínky se nepodařilo zapnout. Chyba: " + String((e && e.message) || e); }
@@ -497,6 +511,7 @@ function viewSettings(X) {
   if (store.mode === "demo") pushBody.push(h("p", { text: "V ukázkovém režimu připomínky nefungují. Zapnou se po nastavení Firebase podle návodu." }));
   else if (UI.pushOn) pushBody.push(h("p", { text: "Zapnuté. Ve 12:00 tři, dva a jeden den před zápasem ti přijde upozornění." }),
     h("button", { class: "btn ghost", type: "button", onclick: async () => { await store.disablePush(); UI.pushOn = false; toast("Připomínky jsou vypnuté."); render(); }, text: "Vypnout připomínky" }));
+  else if (IS_SAMSUNG) pushBody.push(samsungNote());
   else if (ios && !standalone) pushBody.push(h("p", { text: "Na iPhonu nejdřív přidej aplikaci na plochu (Safari → Sdílet → Přidat na plochu) a otevři ji odtamtud. Pak tu připomínky zapneš." }));
   else if (!UI.pushSupported) pushBody.push(h("p", { text: "Tenhle prohlížeč upozornění nepodporuje. Zkus Chrome na Androidu nebo Safari na iPhonu (iOS 16.4 a novější)." }));
   else pushBody.push(h("p", { text: "Ve 12:00 tři, dva a jeden den před zápasem ti přijde upozornění." }), h("button", { class: "btn", type: "button", onclick: enablePush, text: "Zapnout připomínky" }), pushStatus());
