@@ -15,7 +15,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -45,9 +45,24 @@ jobs:
           FORCE_NOTIFY: ${{ github.event.inputs.notify }}
         run: node sync.js
 
-      # GitHub u veřejných repozitářů po 60 dnech bez změn vypíná plánované úlohy. Tohle je udrží zapnuté.
+      # GitHub u veřejných repozitářů po 60 dnech bez změn vypíná plánované úlohy.
+      # Pojistka 1: při každém běhu automat potvrdí, že má zůstat zapnutý.
+      # Pojistka 2: když se v repozitáři 40 dní nic nezměnilo, zapíše malý udržovací záznam (to se počítá jako aktivita).
       - name: Udržet plánované spouštění
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/sync.yml/enable" || true
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/sync.yml/enable" || true
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          days=$(( (now - last) / 86400 ))
+          echo "Poslední změna v repozitáři před $days dny."
+          if [ "$days" -ge 40 ]; then
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/udrzovaci-zaznam.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/udrzovaci-zaznam.txt
+            git commit -m "Udržovací záznam, aby GitHub nevypnul automat"
+            git push
+          fi
