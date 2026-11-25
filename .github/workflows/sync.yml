@@ -45,6 +45,20 @@ jobs:
           FORCE_NOTIFY: ${{ github.event.inputs.notify }}
         run: node sync.js
 
+      # Kalendářové soubory pro iPhone (kalendar/*.ics) se uloží do repozitáře, aby byly na webu aplikace.
+      - name: Uložit kalendářové soubory
+        if: always()
+        run: |
+          if [ -d kalendar ] && [ -n "$(git status --porcelain kalendar)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A kalendar
+            git commit -m "Kalendář zápasů"
+            git push || (git pull --rebase && git push)
+          else
+            echo "Kalendářové soubory beze změny."
+          fi
+
       # GitHub u veřejných repozitářů po 60 dnech bez změn vypíná plánované úlohy.
       # Pojistka 1: při každém běhu automat potvrdí, že má zůstat zapnutý.
       # Pojistka 2: když se v repozitáři 40 dní nic nezměnilo, zapíše malý udržovací záznam (to se počítá jako aktivita).
@@ -64,5 +78,5 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add .github/udrzovaci-zaznam.txt
             git commit -m "Udržovací záznam, aby GitHub nevypnul automat"
-            git push
+            git push || (git pull --rebase && git push)
           fi
