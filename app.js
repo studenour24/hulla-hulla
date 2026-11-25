@@ -189,6 +189,13 @@ function editScore(m) {
 
 /* ---------- kalendář ---------- */
 const MATCH_MINUTES = 90;
+/* Záložní seznam hřišť z psmf.cz/hriste/ (stav 11/2026): kód → [název, adresa, šířka, délka]. Přednost má adresa, kterou doplní automat. */
+const VENUES = {"ARIT":["Aritma","Nad Lávkou 672/5, Praha 6",50.0978261,14.3375753],"ASTR1":["Astra Zahradní město","V Korytech 157/27, Praha 10",50.0563942,14.4914603],"ASTR2":["Astra Zahradní město","V Korytech 157/27, Praha 10",50.0563942,14.4914603],"BECH":["Běchovice 2","Na Korunce 580, Praha 9",50.075445,14.5980378],"CESMI":["Čechie Smíchov","Smrčinská 3346/5, Praha 5",50.0748253,14.3653978],"CZU":["Sportcentrum ČZU","Kamýcká 1275, Praha 6",50.1297406,14.3785564],"DEKAN":["Děkanka","Děkanská vinice I 987/5, Praha 4",50.0530644,14.4298419],"DEKHA":["Děkanka hala","Děkanská vinice I 987/5, Praha 4",50.0548711,14.43151],"EDEN":["Slavia hala","Vladivostocká 1460/10, Praha 10",50.0685256,14.4776217],"HANSP":["Hanspaulka","Na Hanspaulce 166/2, Praha 6",50.1052731,14.3778769],"HOSTI":["SK Hostivař","Švehlova 1362/36, Praha 10",50.0525669,14.5208144],"HRAB1":["Hrabákova","Hrabákova 2001/21, Praha 4",50.0296181,14.4818272],"HRAB2":["Hrabákova","Hrabákova 2001/21, Praha 4",50.0296181,14.4818272],"HRAB3":["Hrabákova","Hrabákova 2001/21, Praha 4",50.0296181,14.4818272],"KORAB":["SC Koráb","Krejčího 2261/2a, Praha 8",50.1132244,14.4659458],"LITVI":["Litvínovská","Litvínovská 500/5, Praha 9",50.1202406,14.4875981],"MALES":["AFK Malešice","Heldova 555/1, Praha 10",50.0852672,14.5147994],"METE1":["Meteor 8","U Meteoru 29/3, Praha 8",50.1094372,14.4699986],"METE2":["Meteor 8","U Meteoru 29/3, Praha 8",50.1094372,14.4699986],"MIKU1":["Mikulova","Mikulova 1594/4, Praha 4",50.0297817,14.5107133],"MIKU2":["Mikulova","Mikulova 1594/4, Praha 4",50.0297817,14.5107133],"MIKU3":["Mikulova","Mikulova 1594/4, Praha 4",50.0297817,14.5107133],"MIKU4":["Mikulova","Mikulova 1594/4, Praha 4",50.0297817,14.5107133],"MOTO1":["Motorlet","Butovická 592/35, Praha 5",50.0514194,14.3617619],"MOTO4":["Motorlet","Butovická 592/35, Praha 5",50.0502897,14.3600775],"P1":["Pražačka","Za Žižkovskou vozovnou 2716/19, Praha 3",50.0929106,14.4748442],"P2":["Pražačka","Za Žižkovskou vozovnou 2716/19, Praha 3",50.0929106,14.4748442],"P3":["Pražačka","Za Žižkovskou vozovnou 2716/19, Praha 3",50.0929106,14.4748442],"PLAM":["Plamínkové","Plamínkové 1593/2, Praha 4",50.0528111,14.4352975],"PODV1":["Podvinný mlýn","Kovanecká, Praha 9",50.10945,14.4919236],"PODV2":["Podvinný mlýn","Kovanecká, Praha 9",50.10945,14.4919236],"PRKOP":["Přední Kopanina","Ke Goniu 123, Praha 6",50.1149497,14.2955425],"SANC1":["SC Měcholupy","Turínská 1483/3, Praha 10",50.0386478,14.5487886],"SANC2":["SC Měcholupy","Turínská 1483/3, Praha 10",50.0386478,14.5487886],"SCBEC":["SC Běchovice","Richtrova 536, Praha 9",50.0796994,14.6201031],"SLIVE":["AFK Slivenec","U Sportoviště 54/5, Praha 5",50.0213006,14.3564567],"STER1":["Štěrboholy","U Školy 430, Praha 10",50.0708439,14.5536542],"STER2":["Štěrboholy","U Školy 430, Praha 10",50.0708439,14.5536542],"STER3":["Štěrboholy","U Školy 430, Praha 10",50.0708439,14.5536542],"STOD":["Sokol Stodůlky","Kovářova 545, Praha 5",50.0512025,14.3110753],"TEMPO":["FC Tempo","Ve Lhotce 1045/3, Praha 4",50.0207742,14.4326447],"ZABEH":["Záběhlice","Záběhlická 82/3, Praha 10",50.0538069,14.4869769],"ZAK":["Zákostelní","Novoškolská 696/2, Praha 9",50.1090622,14.5056881]};
+function venueOf(m) {
+  if (m.venueAddress) return { name: m.venueName || "", address: m.venueAddress, lat: m.venueLat, lng: m.venueLng };
+  const v = m.venue && VENUES[String(m.venue).toUpperCase()];
+  return v ? { name: v[0], address: v[1], lat: v[2], lng: v[3] } : null;
+}
 function pragueToDate(date, time) {
   const [y, mo, d] = date.split("-").map(Number);
   const [hh, mm] = (time || "12:00").split(":").map(Number);
@@ -222,14 +229,15 @@ function calEvent(m, X) {
   const start = pragueToDate(m.date, m.time);
   const end = new Date(start.getTime() + MATCH_MINUTES * 60000);
   const title = "Hanspaulka " + teams + (m.venue ? " (" + m.venue + ")" : "");
-  const location = m.venueAddress || (m.venue ? "hřiště " + m.venue : "");
+  const v = venueOf(m);
+  const location = v ? v.address : "";
   const details = [
     roundLabel(m) + (season ? ", skupina " + season.group : ""),
-    m.venue ? "Hřiště " + m.venue + (m.venueName ? " – " + m.venueName : "") : "",
+    m.venue ? "Hřiště " + m.venue + (v && v.name ? " – " + v.name : "") : "",
     m.ourColor ? "Dresy: " + m.ourColor + (m.oppColor ? ", soupeř " + m.oppColor : "") : "",
     "Docházka: " + location_href()
   ].filter(Boolean).join("\n");
-  return { title, start, end, location, details, uid: m.id + "@hulla-hulla-fc" };
+  return { title, start, end, location, details, lat: v ? v.lat : null, lng: v ? v.lng : null, uid: m.id + "@hulla-hulla-fc" };
 }
 function location_href() { return location.origin + location.pathname; }
 function icsFor(m, X) {
@@ -243,7 +251,7 @@ function icsFor(m, X) {
     "DTEND:" + icsStamp(e.end),
     "SUMMARY:" + icsText(e.title),
     e.location ? "LOCATION:" + icsText(e.location) : null,
-    (m.venueLat != null && m.venueLng != null) ? "GEO:" + m.venueLat + ";" + m.venueLng : null,
+    (e.lat != null && e.lng != null) ? "GEO:" + e.lat + ";" + e.lng : null,
     "DESCRIPTION:" + icsText(e.details),
     "END:VEVENT", "END:VCALENDAR"
   ].filter(Boolean).map(icsFold);
