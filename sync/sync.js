@@ -18,6 +18,11 @@
 "use strict";
 const { JSDOM } = require("jsdom");
 const PSMF = require("./psmf");
+const ICS = require("./ics");
+const fs = require("fs");
+const path = require("path");
+const ICS_DIR = process.env.ICS_DIR || path.join(__dirname, "..", "kalendar");
+const MATCH_MINUTES = 90;
 const CONF = require("./seasons.json");
 
 const BASE = "https://www.psmf.cz";
@@ -161,7 +166,8 @@ async function syncSeasons(db) {
   }
 
   await ensurePlayers(db);
-  await annotateVenues(db);
+  const venues = await annotateVenues(db);
+  await writeCalendarFiles(db, venues);
   await cfgRef.set({ currentSeason: current.season.id, currentUrl: current.url, lastSync: new Date().toISOString(), syncError: null }, { merge: true });
   return { current, results };
 }
@@ -170,7 +176,7 @@ async function syncSeasons(db) {
 async function annotateVenues(db) {
   let venues;
   try { venues = PSMF.parseVenues((await fetchDoc("/hriste/")).doc); }
-  catch (e) { console.warn("Seznam hřišť se nepodařilo stáhnout:", e.message); return; }
+  catch (e) { console.warn("Seznam hřišť se nepodařilo stáhnout:", e.message); return null; }
   console.log("Hřišť v seznamu PSMF:", Object.keys(venues).length);
   const upcoming = await db.collection("matches").where("score", "==", null).get();
   for (const d of upcoming.docs) {
@@ -180,6 +186,51 @@ async function annotateVenues(db) {
     if (m.venueAddress === v.address && m.venueName === v.name && m.venueLat === v.lat) continue;
     await d.ref.set({ venueName: v.name, venueAddress: v.address, venueLat: v.lat, venueLng: v.lng }, { merge: true });
   }
+  return venues;
+}
+
+/* Kalendářové soubory pro iPhone: kalendar/<zápas>.ics, na webu aplikace. Mění se jen, když se změní zápas. */
+async function writeCalendarFiles(db, venues) {
+  const seasons = Object.fromEntries((await db.collection("seasons").get()).docs.map(d => [d.id, d.data()]));
+  const today = pragueNow().date;
+  const upcoming = (await db.collection("matches").where("score", "==", null).get()).docs
+    .map(d => Object.assign({ id: d.id }, d.data()))
+    .filter(m => m.date >= today && m.time);
+  fs.mkdirSync(ICS_DIR, { recursive: true });
+  const stripStamp = t => t.replace(/^DTSTAMP:.*\r?\n/m, "");
+  let changed = 0;
+  for (const m of upcoming) {
+    const v = m.venueAddress
+      ? { name: m.venueName || "", address: m.venueAddress, lat: m.venueLat, lng: m.venueLng }
+      : (venues && m.venue && venues[String(m.venue).toUpperCase()]) || null;
+    const teams = m.home ? TEAM + " - " + m.opp : m.opp + " - " + TEAM;
+    const start = ICS.pragueToDate(m.date, m.time);
+    const season = seasons[m.season];
+    const body = ICS.buildIcs({
+      uid: m.id + "@hulla-hulla-fc",
+      title: "Hanspaulka " + teams + (m.venue ? " (" + m.venue + ")" : ""),
+      start, end: new Date(start.getTime() + MATCH_MINUTES * 60000),
+      location: v ? v.address : "", lat: v ? v.lat : null, lng: v ? v.lng : null,
+      description: [
+        (m.round ? m.round + ". kolo" : "Zápas") + (season ? ", skupina " + season.group : ""),
+        m.venue ? "Hřiště " + m.venue + (v && v.name ? " – " + v.name : "") : "",
+        m.ourColor ? "Dresy: " + m.ourColor + (m.oppColor ? ", soupeř " + m.oppColor : "") : "",
+        APP_URL ? "Docházka: " + APP_URL : ""
+      ].filter(Boolean).join("\n")
+    });
+    const file = path.join(ICS_DIR, m.id + ".ics");
+    if (fs.existsSync(file) && stripStamp(fs.readFileSync(file, "utf8")) === stripStamp(body)) continue;
+    fs.writeFileSync(file, body);
+    changed++;
+  }
+  // úklid: soubory zápasů starších než 30 dní
+  const limit = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10).replace(/-/g, "");
+  for (const f of fs.readdirSync(ICS_DIR)) {
+    if (!f.endsWith(".ics")) continue;
+    const m = fs.readFileSync(path.join(ICS_DIR, f), "utf8").match(/^DTSTART:(\d{8})/m);
+    if (m && m[1] < limit) { fs.unlinkSync(path.join(ICS_DIR, f)); changed++; }
+  }
+  console.log("Kalendářové soubory: nové nebo změněné", changed, "z", upcoming.length);
 }
 
 /* Hráče ze sestav posledních dvou sezón přidá do soupisky, pokud tam ještě nejsou */
@@ -299,4 +350,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { dayDiff, fmtDay, slugify, pragueNow };
+module.exports = { dayDiff, fmtDay, slugify, pragueNow, writeCalendarFiles, ICS_DIR };
