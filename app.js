@@ -176,14 +176,16 @@ function editScore(m) {
     const s = sc.value.trim().replace(/\s/g, ""), hs = ht.value.trim().replace(/\s/g, "");
     if (!/^\d{1,2}:\d{1,2}$/.test(s) || (hs && !/^\d{1,2}:\d{1,2}$/.test(hs))) { toast("Výsledek zapiš jako domácí:hosté, třeba 4:2."); return; }
     closeSheet();
-    try { await store.setOverride(m.id, { score: s, ht: hs || null }); toast("Výsledek opraven."); } catch (e) { toast("Uložení se nepovedlo."); }
+    try { await store.setOverride(m.id, { score: s, ht: hs || null }); toast(m.score ? "Výsledek opraven." : "Výsledek zapsán. Až ho zveřejní PSMF, nahradí se."); } catch (e) { toast("Uložení se nepovedlo."); }
   } }];
-  if (m.override) actions.unshift({ label: "Vrátit podle PSMF", cls: "danger", onclick: async () => { closeSheet(); try { await store.setOverride(m.id, null); toast("Platí zase výsledek z PSMF."); } catch (e) { toast("Změna se nepovedla."); } } });
-  openSheet("Opravit výsledek", [
+  if (m.override) actions.unshift({ label: m.score ? "Vrátit podle PSMF" : "Smazat zápis", cls: "danger", onclick: async () => { closeSheet(); try { await store.setOverride(m.id, null); toast(m.score ? "Platí zase výsledek z PSMF." : "Ruční zápis smazán."); } catch (e) { toast("Změna se nepovedla."); } } });
+  openSheet(m.score ? "Opravit výsledek" : "Zapsat výsledek", [
     h("p", { class: "hint" }, teamsLine(m)),
     h("label", { class: "field", for: "sheet-score" }, "Výsledek (domácí:hosté)", sc),
     h("label", { class: "field", for: "sheet-ht" }, "Poločas (nepovinné)", ht),
-    h("p", { class: "hint", text: "Ruční oprava má přednost před údajem z PSMF, dokud ji nezrušíš." })
+    h("p", { class: "hint", text: m.score
+      ? "Ruční oprava má přednost před výsledkem z PSMF, dokud ji nevrátíš tlačítkem Vrátit podle PSMF."
+      : "PSMF výsledek ještě nezveřejnilo. Až ho zveřejní, tvůj zápis se sám nahradí výsledkem z PSMF." })
   ], actions);
 }
 
@@ -518,7 +520,7 @@ function matchDetails(m, X) {
   const body = h("div", { class: "detail" });
   body.append(h("p", null, h("span", { class: "lbl", text: roundLabel(m) + " · " }), fmtLong(m) + (m.time ? " v " + m.time : "") + (m.venue ? ", hřiště " + m.venue : "")));
   if (r) {
-    body.append(h("p", null, h("span", { class: "lbl", text: "Výsledek: " }), scoreOf(m) + (htOf(m) ? " (poločas " + htOf(m) + ")" : "") + (m.forfeit ? ", kontumace" : "") + (m.override ? " · opraveno ručně" : "")));
+    body.append(h("p", null, h("span", { class: "lbl", text: "Výsledek: " }), scoreOf(m) + (htOf(m) ? " (poločas " + htOf(m) + ")" : "") + (m.forfeit ? ", kontumace" : "") + (m.override ? (m.score ? " · opraveno ručně" : " · zapsáno ručně, čeká na PSMF") : "")));
     if (gt) body.append(h("p", { text: gt }));
     if (m.lineup && m.lineup.length) {
       body.append(h("p", null, h("span", { class: "lbl", text: "Sestava (" + m.lineup.length + "): " }),
