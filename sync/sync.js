@@ -93,6 +93,46 @@ function initFirebase() {
 }
 
 /* ---------- 1. a 2.: stažení a uložení dat ---------- */
+/* Ruční výsledek zapsaný dřív, než ho PSMF zveřejnilo (zápas tehdy ještě neměl skóre z PSMF), se po zveřejnění nahradí
+   výsledkem z PSMF. Ruční oprava výsledku, který na PSMF už byl, zůstává, dokud ji někdo v aplikaci nevrátí. */
+function shouldDropOverride(prev, psmfScore) {
+  return !!(prev && prev.override && !prev.score && psmfScore);
+}
+
+async function writeSeason(db, meta, parsed) {
+  const sid = parsed.season.id;
+  const old = await db.collection("matches").where("season", "==", sid).get();
+  const prevById = new Map(old.docs.map(d => [d.id, d.data()]));
+  const batch = db.batch();
+  const ids = new Set();
+  for (const m of parsed.matches) {
+    const id = sid + "-" + m.key;
+    ids.add(id);
+    const data = {
+      season: sid, key: m.key, round: m.round, date: m.date, time: m.time || null, venue: m.venue || null,
+      home: m.home, opp: m.opp, score: m.score || null, ht: m.ht || null, forfeit: !!m.forfeit, gameId: m.gameId || null,
+      ourColor: m.ourColor || null, oppColor: m.oppColor || null, report: m.report || null, referee: m.referee || null,
+      lineup: m.lineup || [], goals: m.goals || [], cards: m.cards || [], updatedAt: new Date().toISOString()
+    };
+    if (shouldDropOverride(prevById.get(id), m.score)) {
+      data.override = null;
+      console.log("  " + id + ": výsledek zapsaný ručně před zveřejněním nahrazuji výsledkem z PSMF " + m.score);
+    }
+    batch.set(db.doc("matches/" + id), stripUndefined(data), { merge: true });
+  }
+  const us = parsed.table.find(r => r.us) || null;
+  batch.set(db.doc("seasons/" + sid), stripUndefined({
+    id: sid, label: parsed.season.label, year: parsed.season.year, half: parsed.season.half, level: parsed.season.level,
+    group: parsed.season.group, sortKey: parsed.season.sortKey, url: BASE + meta.url,
+    table: parsed.table, us, finalPlace: meta.finalPlace || null,
+    imported: true, hasUpcoming: parsed.matches.some(m => !m.score), updatedAt: new Date().toISOString()
+  }), { merge: true });
+  await batch.commit();
+
+  // zrušené zápasy bez výsledku, které už na PSMF nejsou
+  for (const d of old.docs) if (!ids.has(d.id) && !d.data().score) { console.log("  mažu zrušený zápas", d.id); await d.ref.delete(); }
+}
+
 async function syncSeasons(db) {
   const known = CONF.seasons.map(s => Object.assign({}, s, { season: PSMF.seasonFromUrl(s.url) })).filter(s => s.season);
   const cfgRef = db && db.doc("config/app");
@@ -137,33 +177,7 @@ async function syncSeasons(db) {
 
   if (!db) return { current, results };
 
-  for (const { meta, parsed } of results) {
-    const sid = parsed.season.id;
-    const batch = db.batch();
-    const ids = new Set();
-    for (const m of parsed.matches) {
-      const id = sid + "-" + m.key;
-      ids.add(id);
-      batch.set(db.doc("matches/" + id), stripUndefined({
-        season: sid, key: m.key, round: m.round, date: m.date, time: m.time || null, venue: m.venue || null,
-        home: m.home, opp: m.opp, score: m.score || null, ht: m.ht || null, forfeit: !!m.forfeit, gameId: m.gameId || null,
-        ourColor: m.ourColor || null, oppColor: m.oppColor || null, report: m.report || null, referee: m.referee || null,
-        lineup: m.lineup || [], goals: m.goals || [], cards: m.cards || [], updatedAt: new Date().toISOString()
-      }), { merge: true });
-    }
-    const us = parsed.table.find(r => r.us) || null;
-    batch.set(db.doc("seasons/" + sid), stripUndefined({
-      id: sid, label: parsed.season.label, year: parsed.season.year, half: parsed.season.half, level: parsed.season.level,
-      group: parsed.season.group, sortKey: parsed.season.sortKey, url: BASE + meta.url,
-      table: parsed.table, us, finalPlace: meta.finalPlace || null,
-      imported: true, hasUpcoming: parsed.matches.some(m => !m.score), updatedAt: new Date().toISOString()
-    }), { merge: true });
-    await batch.commit();
-
-    // zrušené zápasy bez výsledku, které už na PSMF nejsou
-    const old = await db.collection("matches").where("season", "==", sid).get();
-    for (const d of old.docs) if (!ids.has(d.id) && !d.data().score) { console.log("  mažu zrušený zápas", d.id); await d.ref.delete(); }
-  }
+  for (const { meta, parsed } of results) await writeSeason(db, meta, parsed);
 
   await ensurePlayers(db);
   const venues = await annotateVenues(db);
@@ -350,4 +364,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { dayDiff, fmtDay, slugify, pragueNow, writeCalendarFiles, ICS_DIR };
+module.exports = { dayDiff, fmtDay, slugify, pragueNow, writeCalendarFiles, ICS_DIR, shouldDropOverride, writeSeason };
