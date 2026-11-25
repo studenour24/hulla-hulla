@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Hulla hulla FC//Dochazka//CS
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:2026p-k11@hulla-hulla-fc
+DTSTAMP:20261125T162505Z
+DTSTART:20261201T194500Z
+DTEND:20261201T211500Z
+SUMMARY:Hanspaulka Hulla hulla FC - Killing power FC (LITVI)
+LOCATION:Litvínovská 500/5\, Praha 9
+GEO:50.1202406;14.4875981
+DESCRIPTION:11. kolo\, skupina 6E\nHřiště LITVI – Litvínovská\nDresy
+ : žlutá\, soupeř černo-bílá\nDocházka: https://studenour24.github.i
+ o/hulla-hulla/
+END:VEVENT
+END:VCALENDAR
