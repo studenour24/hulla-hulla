@@ -271,11 +271,32 @@ function downloadIcs(m, X) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
   toast("Soubor s událostí se stáhl. Otevři ho a ulož do kalendáře.");
 }
-/* iPhone: kalendářový soubor, který automat vystavuje na webu aplikace (kalendar/<zápas>.ics). Safari pak nabídne Přidat do kalendáře. */
+/* iPhone: kalendářový soubor, který automat vystavuje na webu aplikace (kalendar/<zápas>.ics). Safari pak nabídne Přidat do kalendáře.
+   Aplikace spuštěná z plochy ho ve vnitřním okně neumí zobrazit (zůstane prázdné), proto se z ní otevírá rovnou Safari (x-safari-https://, iOS 17+). */
+function icsUrl(m) { return location.origin + location.pathname.replace(/[^/]*$/, "") + "kalendar/" + encodeURIComponent(m.id) + ".ics"; }
+function isStandalone() { return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }
 function openIosCalendar(m) {
-  const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "kalendar/" + encodeURIComponent(m.id) + ".ics";
-  const w = window.open(url, "_blank");
-  if (!w) location.href = url;
+  const url = icsUrl(m);
+  if (!isStandalone()) { const w = window.open(url, "_blank"); if (!w) location.href = url; return; }
+  let left = false;
+  const onHide = () => { if (document.visibilityState === "hidden") left = true; };
+  document.addEventListener("visibilitychange", onHide);
+  const a = h("a", { href: "x-safari-" + url, style: "display:none" });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => {
+    document.removeEventListener("visibilitychange", onHide);
+    if (left || document.visibilityState !== "visible") return;
+    openSheet("Kalendář v iPhonu", [
+      h("p", { style: "margin:0", text: "Safari se samo neotevřelo. Klepni na Zkopírovat odkaz, otevři Safari, odkaz vlož do adresního řádku a potvrď. Safari pak nabídne Přidat do kalendáře." }),
+      h("p", { class: "hint", style: "user-select:all;-webkit-user-select:all;word-break:break-all", text: url })
+    ], [
+      { label: "Zavřít", cls: "ghost", onclick: closeSheet },
+      { label: "Zkopírovat odkaz", onclick: async () => {
+        try { await navigator.clipboard.writeText(url); closeSheet(); toast("Odkaz je zkopírovaný. Otevři Safari a vlož ho do adresního řádku."); }
+        catch (e) { toast("Kopírování nešlo. Podrž prst na odkazu a zkopíruj ho ručně."); }
+      } }
+    ]);
+  }, 1500);
 }
 function calendarSheet(m) {
   const X = derive();
