@@ -209,6 +209,27 @@
     return { season, matches, table: parseTable(doc, team) };
   }
 
+  /* Seznam hřišť z psmf.cz/hriste/: kód → název, adresa (první řádek) a GPS z odkazu na Mapy.cz */
+  function parseVenues(doc) {
+    const out = {};
+    for (const tr of doc.querySelectorAll("table tr")) {
+      const c = Array.from(tr.children).filter(x => x.tagName === "TD");
+      if (c.length < 3) continue;
+      const links = Array.from(c[1].querySelectorAll("a[name]"));
+      if (!links.length) continue;
+      const address = clean(c[2].innerHTML.split(/<br\s*\/?>/i)[0].replace(/<[^>]+>/g, " "));
+      const name = clean(c[0].textContent);
+      for (const a of links) {
+        const code = clean(a.getAttribute("name")).toUpperCase();
+        let href = a.getAttribute("href") || "";
+        try { href = decodeURIComponent(href); } catch (e) {}
+        const m = href.match(/GPS:\s*(-?\d+\.\d+)\s+(-?\d+\.\d+)/);
+        if (code) out[code] = { name, address, lat: m ? +m[1] : null, lng: m ? +m[2] : null };
+      }
+    }
+    return out;
+  }
+
   /* Najde odkaz na stránku týmu v nejnovější sezóně (např. ve výsledcích vyhledávání) */
   function findTeamLinks(doc, teamSlug) {
     const urls = new Set();
@@ -220,7 +241,7 @@
       .sort((a, b) => b.season.sortKey - a.season.sortKey);
   }
 
-  const api = { clean, parseDate, parseScore, parseTime, seasonFromUrl, parseLineup, parseGoals, parseCards, parseTeamPage, findTeamLinks };
+  const api = { clean, parseDate, parseScore, parseTime, seasonFromUrl, parseLineup, parseGoals, parseCards, parseTeamPage, findTeamLinks, parseVenues };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.PSMF = api;
 })(typeof self !== "undefined" ? self : this);
