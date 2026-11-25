@@ -265,12 +265,17 @@ function googleCalUrl(m, X) {
 function downloadIcs(m, X) {
   const ics = icsFor(m, X);
   const name = "hanspaulka-" + m.date + ".ics";
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) { location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics); return; }
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
   const a = h("a", { href: url, download: name, style: "display:none" });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
   toast("Soubor s událostí se stáhl. Otevři ho a ulož do kalendáře.");
+}
+/* iPhone: kalendářový soubor, který automat vystavuje na webu aplikace (kalendar/<zápas>.ics). Safari pak nabídne Přidat do kalendáře. */
+function openIosCalendar(m) {
+  const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "kalendar/" + encodeURIComponent(m.id) + ".ics";
+  const w = window.open(url, "_blank");
+  if (!w) location.href = url;
 }
 function calendarSheet(m) {
   const X = derive();
@@ -282,7 +287,7 @@ function calendarSheet(m) {
     h("p", { class: "hint", text: e.location ? "Místo: " + e.location : "Adresa hřiště zatím není známá." })
   ], [
     { label: "Zavřít", cls: "ghost", onclick: closeSheet },
-    { label: ios ? "Kalendář v iPhonu" : "Soubor do kalendáře", cls: "ghost", onclick: () => { closeSheet(); downloadIcs(m, X); } },
+    { label: ios ? "Kalendář v iPhonu" : "Soubor do kalendáře", cls: "ghost", onclick: () => { closeSheet(); if (ios) openIosCalendar(m); else downloadIcs(m, X); } },
     { label: "Google Kalendář", onclick: () => { closeSheet(); window.open(googleCalUrl(m, X), "_blank", "noopener"); } }
   ]);
 }
