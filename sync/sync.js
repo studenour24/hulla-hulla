@@ -161,8 +161,25 @@ async function syncSeasons(db) {
   }
 
   await ensurePlayers(db);
+  await annotateVenues(db);
   await cfgRef.set({ currentSeason: current.season.id, currentUrl: current.url, lastSync: new Date().toISOString(), syncError: null }, { merge: true });
   return { current, results };
+}
+
+/* K nadcházejícím zápasům doplní název a adresu hřiště z psmf.cz/hriste/ (pro kalendář a navigaci) */
+async function annotateVenues(db) {
+  let venues;
+  try { venues = PSMF.parseVenues((await fetchDoc("/hriste/")).doc); }
+  catch (e) { console.warn("Seznam hřišť se nepodařilo stáhnout:", e.message); return; }
+  console.log("Hřišť v seznamu PSMF:", Object.keys(venues).length);
+  const upcoming = await db.collection("matches").where("score", "==", null).get();
+  for (const d of upcoming.docs) {
+    const m = d.data();
+    const v = m.venue && venues[String(m.venue).toUpperCase()];
+    if (!v) { if (m.venue) console.log("  hřiště bez adresy:", m.venue); continue; }
+    if (m.venueAddress === v.address && m.venueName === v.name && m.venueLat === v.lat) continue;
+    await d.ref.set({ venueName: v.name, venueAddress: v.address, venueLat: v.lat, venueLng: v.lng }, { merge: true });
+  }
 }
 
 /* Hráče ze sestav posledních dvou sezón přidá do soupisky, pokud tam ještě nejsou */
