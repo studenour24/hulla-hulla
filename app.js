@@ -187,6 +187,105 @@ function editScore(m) {
   ], actions);
 }
 
+/* ---------- kalendář ---------- */
+const MATCH_MINUTES = 90;
+function pragueToDate(date, time) {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [hh, mm] = (time || "12:00").split(":").map(Number);
+  const want = Date.UTC(y, mo - 1, d, hh, mm);
+  let guess = want;
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Prague", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  for (let i = 0; i < 3; i++) {
+    const p = Object.fromEntries(fmt.formatToParts(new Date(guess)).map(x => [x.type, x.value]));
+    const shown = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+    if (shown === want) break;
+    guess += want - shown;
+  }
+  return new Date(guess);
+}
+function icsStamp(d) { return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
+function icsText(v) { return String(v || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+function icsFold(line) {
+  const enc = new TextEncoder();
+  const out = []; let cur = "", bytes = 0;
+  for (const ch of line) {
+    const b = enc.encode(ch).length;
+    if (bytes + b > (out.length ? 74 : 75)) { out.push(cur); cur = ""; bytes = 0; }
+    cur += ch; bytes += b;
+  }
+  out.push(cur);
+  return out.join("\r\n ");
+}
+function calEvent(m, X) {
+  const season = X.seasons.find(s => s.id === m.season);
+  const teams = m.home ? TEAM + " - " + m.opp : m.opp + " - " + TEAM;
+  const start = pragueToDate(m.date, m.time);
+  const end = new Date(start.getTime() + MATCH_MINUTES * 60000);
+  const title = "Hanspaulka " + teams + (m.venue ? " (" + m.venue + ")" : "");
+  const location = m.venueAddress || (m.venue ? "hřiště " + m.venue : "");
+  const details = [
+    roundLabel(m) + (season ? ", skupina " + season.group : ""),
+    m.venue ? "Hřiště " + m.venue + (m.venueName ? " – " + m.venueName : "") : "",
+    m.ourColor ? "Dresy: " + m.ourColor + (m.oppColor ? ", soupeř " + m.oppColor : "") : "",
+    "Docházka: " + location_href()
+  ].filter(Boolean).join("\n");
+  return { title, start, end, location, details, uid: m.id + "@hulla-hulla-fc" };
+}
+function location_href() { return location.origin + location.pathname; }
+function icsFor(m, X) {
+  const e = calEvent(m, X);
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Hulla hulla FC//Dochazka//CS", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    "UID:" + e.uid,
+    "DTSTAMP:" + icsStamp(new Date()),
+    "DTSTART:" + icsStamp(e.start),
+    "DTEND:" + icsStamp(e.end),
+    "SUMMARY:" + icsText(e.title),
+    e.location ? "LOCATION:" + icsText(e.location) : null,
+    (m.venueLat != null && m.venueLng != null) ? "GEO:" + m.venueLat + ";" + m.venueLng : null,
+    "DESCRIPTION:" + icsText(e.details),
+    "END:VEVENT", "END:VCALENDAR"
+  ].filter(Boolean).map(icsFold);
+  return lines.join("\r\n") + "\r\n";
+}
+function googleCalUrl(m, X) {
+  const e = calEvent(m, X);
+  const q = new URLSearchParams({ action: "TEMPLATE", text: e.title, dates: icsStamp(e.start) + "/" + icsStamp(e.end), location: e.location, details: e.details, ctz: "Europe/Prague" });
+  return "https://calendar.google.com/calendar/render?" + q.toString();
+}
+function downloadIcs(m, X) {
+  const ics = icsFor(m, X);
+  const name = "hanspaulka-" + m.date + ".ics";
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) { location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics); return; }
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  const a = h("a", { href: url, download: name, style: "display:none" });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast("Soubor s událostí se stáhl. Otevři ho a ulož do kalendáře.");
+}
+function calendarSheet(m) {
+  const X = derive();
+  const e = calEvent(m, X);
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  openSheet("Do kalendáře", [
+    h("p", { style: "margin:0;font-weight:600", text: e.title }),
+    h("p", { class: "hint", text: fmtLong(m) + (m.time ? ", " + m.time : "") + " · 1,5 hodiny" }),
+    h("p", { class: "hint", text: e.location ? "Místo: " + e.location : "Adresa hřiště zatím není známá." })
+  ], [
+    { label: "Zavřít", cls: "ghost", onclick: closeSheet },
+    { label: ios ? "Kalendář v iPhonu" : "Soubor do kalendáře", cls: "ghost", onclick: () => { closeSheet(); downloadIcs(m, X); } },
+    { label: "Google Kalendář", onclick: () => { closeSheet(); window.open(googleCalUrl(m, X), "_blank", "noopener"); } }
+  ]);
+}
+function calButton(m, onBoard) {
+  return h("button", {
+    type: "button", class: onBoard ? "btn small" : "btn small ghost",
+    style: onBoard ? "background:transparent;color:var(--board-ink);box-shadow:inset 0 0 0 1.5px var(--board-line)" : null,
+    onclick: (ev) => { ev.preventDefault(); ev.stopPropagation(); calendarSheet(m); }, text: "Do kalendáře"
+  });
+}
+
 /* ---------- pohled: Zápasy ---------- */
 function whoCard(X) {
   const sel = h("select", { class: "input", id: "who", onchange: e => chooseMe(e.target.value) },
@@ -223,7 +322,9 @@ function boardCard(m, X) {
       h("span", null, h("i", { style: "background:var(--no)" }), "nejde " + c.no),
       h("span", null, h("i", { style: "background:rgba(255,255,255,.25)" }), "nehlásil se " + c.none)),
     me ? [h("p", { class: "me-label", text: "Tvoje účast (" + me.name + ")" }), tri(m, me, true)] : null,
-    h("a", { class: "more", href: "#dochazka/" + m.id, text: "Celá docházka a náhradníci →" }));
+    h("div", { class: "row", style: "justify-content:space-between" },
+      h("a", { class: "more", href: "#dochazka/" + m.id, text: "Celá docházka a náhradníci →" }),
+      calButton(m, true)));
 }
 function upcomingItem(m, X) {
   const c = counts(m, X);
@@ -232,7 +333,7 @@ function upcomingItem(m, X) {
     h("div", { class: "date" }, h("b", { text: fmtDate(m) }), h("span", { text: (m.time || "") + (m.venue ? " · " + m.venue : "") })),
     h("div", { class: "grow" }, h("div", { class: "teams-line" }, teamsLine(m)),
       h("a", { class: "small", href: "#dochazka/" + m.id, text: roundLabel(m) + " · jde " + c.going + " z " + (c.total + c.subs) + " · " + relDays(m) })),
-    me ? h("div", { style: "width:100%;display:flex;justify-content:flex-end" }, tri(m, me, false)) : null);
+    h("div", { style: "width:100%;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap" }, calButton(m, false), me ? tri(m, me, false) : null));
 }
 function pushCard() {
   if (UI.pushOn || store.mode === "demo") return null;
@@ -316,7 +417,8 @@ function viewAttendance(X, id) {
     h("div", { class: "counts" }, readiness(c),
       h("span", null, "Jde ", h("b", { class: "num", text: String(c.going) }), c.subs ? " (z toho " + c.subs + " " + plural(c.subs, "náhradník", "náhradníci", "náhradníků") + ")" : ""),
       h("span", null, "Nejde ", h("b", { class: "num", text: String(c.no) })),
-      h("span", null, "Nehlásil se ", h("b", { class: "num", text: String(c.none) })))));
+      h("span", null, "Nehlásil se ", h("b", { class: "num", text: String(c.none) }))),
+    scoreOf(m) ? null : h("div", { class: "row" }, calButton(m, false))));
 
   const me = X.me;
   out.push(h("div", { class: "list" }, X.active.map(p => h("div", { class: "player" + (p.id === me ? " me" : "") },
@@ -395,7 +497,7 @@ function matchDetails(m, X) {
     if (m.lineup && m.lineup.length) body.append(h("p", { class: "small", text: "★ nejlepší hráč zápasu, (K) kapitán, podle zápisu PSMF" }));
   }
   if (m.ourColor) body.append(h("p", null, h("span", { class: "lbl", text: "Dresy: " }), "my " + m.ourColor + (m.oppColor ? ", soupeř " + m.oppColor : "")));
-  body.append(h("div", { class: "row" }, h("button", { type: "button", class: "btn small ghost", onclick: () => editScore(m), text: r ? "Opravit výsledek" : "Zadat výsledek ručně" })));
+  body.append(h("div", { class: "row" }, r ? null : calButton(m, false), h("button", { type: "button", class: "btn small ghost", onclick: () => editScore(m), text: r ? "Opravit výsledek" : "Zadat výsledek ručně" })));
   det.append(body);
   return det;
 }
